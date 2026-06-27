@@ -1238,7 +1238,7 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
                 return (
                   <div key={m.month} className="border border-gray-200 rounded p-4 space-y-4 page-break-inside-avoid bg-white">
                     <div className="flex justify-between items-center border-b border-gray-300 pb-2 bg-gray-50 px-2.5 py-1.5 rounded">
-                      <span className="font-serif italic font-bold text-gray-900 text-sm">{m.month} Summary</span>
+                      <span className="font-serif italic font-bold text-red-600 print:text-red-600 text-sm">{m.month} Summary</span>
                       <div className="flex gap-4 text-[10px] font-mono font-bold">
                         <span className="text-emerald-700">IN: {formatCurrency(m.incomeTotal)}</span>
                         <span className="text-red-700">OUT: {formatCurrency(m.expenseTotal)}</span>
