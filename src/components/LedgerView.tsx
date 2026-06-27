@@ -24,6 +24,8 @@ interface LedgerViewProps {
   onEditTransaction: (transaction: Transaction) => void;
   onDeleteTransaction: (id: string) => void;
   onExportCSV: () => void;
+  role?: 'admin' | 'resident';
+  selectedUnit?: string;
 }
 
 export default function LedgerView({
@@ -31,7 +33,9 @@ export default function LedgerView({
   onAddTransaction,
   onEditTransaction,
   onDeleteTransaction,
-  onExportCSV
+  onExportCSV,
+  role = 'admin',
+  selectedUnit = 'Wing A - Block 901'
 }: LedgerViewProps) {
   // Filters & State
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,6 +50,9 @@ export default function LedgerView({
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
+  // Resident Ledger Scope Toggle
+  const [residentLedgerScope, setResidentLedgerScope] = useState<'my-unit' | 'public'>('my-unit');
+
   // Form Fields State
   const [date, setDate] = useState('');
   const [type, setType] = useState<'Income' | 'Expense'>('Expense');
@@ -56,6 +63,23 @@ export default function LedgerView({
   const [mode, setMode] = useState('Cash');
   const [reference, setReference] = useState('');
   const [description, setDescription] = useState('');
+
+  // Parsed unit for Resident role filter
+  const parsedUnit = useMemo(() => {
+    const match = selectedUnit.match(/Wing\s+([A-B])\s*-\s*Block\s*(\d+)/i);
+    if (match) {
+      return { wing: match[1] as 'A' | 'B', block: match[2] };
+    }
+    return { wing: 'A' as 'A' | 'B', block: '901' };
+  }, [selectedUnit]);
+
+  // Restrict source transactions if resident chooses my-unit scope
+  const sourceTransactions = useMemo(() => {
+    if (role === 'resident' && residentLedgerScope === 'my-unit') {
+      return transactions.filter(t => t.wing === parsedUnit.wing && t.block === parsedUnit.block);
+    }
+    return transactions;
+  }, [transactions, role, residentLedgerScope, parsedUnit]);
 
   // Extract unique filters based on current data
   const uniqueCategories = useMemo(() => {
@@ -151,7 +175,7 @@ export default function LedgerView({
 
   // Filter logic
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(t => {
+    return sourceTransactions.filter(t => {
       // search term matches category, mode, reference, description, or resident name
       const searchStr = `${t.category} ${t.mode} ${t.reference} ${t.description} ${t.residentName || ''} ${t.date}`.toLowerCase();
       const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
@@ -162,7 +186,7 @@ export default function LedgerView({
 
       return matchesSearch && matchesType && matchesMode && matchesCategory;
     });
-  }, [transactions, searchTerm, typeFilter, modeFilter, categoryFilter]);
+  }, [sourceTransactions, searchTerm, typeFilter, modeFilter, categoryFilter]);
 
   // Pagination Math
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage) || 1;
@@ -190,6 +214,40 @@ export default function LedgerView({
 
   return (
     <div className="space-y-6">
+      {/* Resident Ledger Scope Toggle */}
+      {role === 'resident' && (
+        <div className="bg-[#111111] border border-[#c5a059]/30 p-5 rounded-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl">
+          <div className="space-y-1">
+            <h4 className="font-serif italic text-base text-[#c5a059]">Resident Account Statement</h4>
+            <p className="text-xs text-[#e4e3e0]/50 font-mono">
+              Select to view your unit statement or audit public society cash logs.
+            </p>
+          </div>
+          <div className="flex bg-[#080808] border border-[#222] p-1 rounded-lg w-full md:w-auto">
+            <button
+              onClick={() => { setResidentLedgerScope('my-unit'); setCurrentPage(1); }}
+              className={`flex-1 md:flex-initial text-center px-4 py-2 rounded text-xs font-semibold uppercase tracking-wider transition cursor-pointer ${
+                residentLedgerScope === 'my-unit' 
+                  ? 'bg-[#1a1a1a] text-[#c5a059] border border-[#222]/80 shadow-sm' 
+                  : 'text-[#e4e3e0]/50 hover:text-[#e4e3e0]'
+              }`}
+            >
+              My Flat Account ({parsedUnit.wing}-{parsedUnit.block})
+            </button>
+            <button
+              onClick={() => { setResidentLedgerScope('public'); setCurrentPage(1); }}
+              className={`flex-1 md:flex-initial text-center px-4 py-2 rounded text-xs font-semibold uppercase tracking-wider transition cursor-pointer ${
+                residentLedgerScope === 'public' 
+                  ? 'bg-[#1a1a1a] text-[#c5a059] border border-[#222]/80 shadow-sm' 
+                  : 'text-[#e4e3e0]/50 hover:text-[#e4e3e0]'
+              }`}
+            >
+              Public Society Ledger
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Search and Filters panel */}
       <div className="bg-[#111111] border border-[#222] p-6 rounded-lg space-y-4">
         <div className="flex flex-col lg:flex-row gap-3 justify-between items-stretch lg:items-center">
@@ -263,14 +321,16 @@ export default function LedgerView({
               Export CSV
             </button>
 
-            {/* Add manually */}
-            <button
-              onClick={handleOpenAdd}
-              className="flex items-center gap-1.5 bg-[#c5a059] hover:bg-[#b08c46] text-[#080808] px-3.5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-lg shadow-[#c5a059]/10"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add Voucher
-            </button>
+            {/* Add manually (Admin only) */}
+            {role === 'admin' && (
+              <button
+                onClick={handleOpenAdd}
+                className="flex items-center gap-1.5 bg-[#c5a059] hover:bg-[#b08c46] text-[#080808] px-3.5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition cursor-pointer shadow-lg shadow-[#c5a059]/10"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Voucher
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -288,7 +348,7 @@ export default function LedgerView({
                 <th className="py-4 px-4 font-semibold">Reference</th>
                 <th className="py-4 px-6 font-semibold">Description</th>
                 <th className="py-4 px-6 font-semibold text-right">Amount</th>
-                <th className="py-4 px-6 font-semibold text-center">Actions</th>
+                {role === 'admin' && <th className="py-4 px-6 font-semibold text-center">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-[#222]/55">
@@ -345,35 +405,37 @@ export default function LedgerView({
                         {formatVal(t.amount)}
                       </td>
 
-                      {/* Action buttons */}
-                      <td className="py-3.5 px-6 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1.5 opacity-50 group-hover:opacity-100 transition duration-150">
-                          <button
-                            onClick={() => handleOpenEdit(t)}
-                            className="p-1.5 hover:bg-[#1a1a1a] text-[#e4e3e0]/60 hover:text-[#c5a059] rounded border border-transparent hover:border-[#222] transition cursor-pointer"
-                            title="Edit Transaction"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm('Delete this voucher entry permanently?')) {
-                                onDeleteTransaction(t.id);
-                              }
-                            }}
-                            className="p-1.5 hover:bg-[#1a1a1a] text-[#e4e3e0]/60 hover:text-rose-400 rounded border border-transparent hover:border-[#222] transition cursor-pointer"
-                            title="Delete Voucher"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
+                      {/* Action buttons (Admin only) */}
+                      {role === 'admin' && (
+                        <td className="py-3.5 px-6 text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-1.5 opacity-50 group-hover:opacity-100 transition duration-150">
+                            <button
+                              onClick={() => handleOpenEdit(t)}
+                              className="p-1.5 hover:bg-[#1a1a1a] text-[#e4e3e0]/60 hover:text-[#c5a059] rounded border border-transparent hover:border-[#222] transition cursor-pointer"
+                              title="Edit Transaction"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm('Delete this voucher entry permanently?')) {
+                                  onDeleteTransaction(t.id);
+                                }
+                              }}
+                              className="p-1.5 hover:bg-[#1a1a1a] text-[#e4e3e0]/60 hover:text-rose-400 rounded border border-transparent hover:border-[#222] transition cursor-pointer"
+                              title="Delete Voucher"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </motion.tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={8} className="py-16 text-center text-[#e4e3e0]/40">
+                  <td colSpan={role === 'admin' ? 8 : 7} className="py-16 text-center text-[#e4e3e0]/40">
                     <FileText className="w-8 h-8 mx-auto stroke-1 text-[#c5a059]/60" />
                     <p className="mt-3 text-xs">No matching transactions found. Try resetting filters.</p>
                   </td>

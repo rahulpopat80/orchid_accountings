@@ -13,12 +13,294 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #080808;
+  background: var(--scroll-track, #080808);
 }
 ::-webkit-scrollbar-thumb {
-  background: #222222;
+  background: var(--scroll-thumb, #222222);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #c5a059;
+  background: var(--scroll-thumb-hover, #c5a059);
+}
+
+/* Sophisticated Light Theme Overrides */
+.light-theme {
+  --scroll-track: #fcfbf9;
+  --scroll-thumb: #e3ded5;
+  --scroll-thumb-hover: #b08c46;
+  background-color: #fcfbf9 !important;
+  color: #22211f !important;
+}
+
+/* Base elements */
+.light-theme aside {
+  background-color: #ffffff !important;
+  border-color: #e3ded5 !important;
+}
+
+.light-theme main {
+  background-color: #fcfbf9 !important;
+}
+
+/* Component backgrounds */
+.light-theme .bg-\[\#111111\] {
+  background-color: #ffffff !important;
+}
+
+.light-theme .bg-\[\#080808\] {
+  background-color: #f7f5f0 !important;
+}
+
+.light-theme .bg-\[\#161616\] {
+  background-color: #f4f2eb !important;
+}
+
+.light-theme .bg-\[\#0c0c0c\]\/40 {
+  background-color: rgba(247, 245, 240, 0.5) !important;
+}
+
+.light-theme .bg-\[\#0c0c0c\]\/60 {
+  background-color: rgba(247, 245, 240, 0.7) !important;
+}
+
+.light-theme .bg-\[\#0c0c0c\]\/80 {
+  background-color: rgba(247, 245, 240, 0.9) !important;
+}
+
+.light-theme .bg-\[\#0c0c0c\]\/20 {
+  background-color: rgba(247, 245, 240, 0.3) !important;
+}
+
+.light-theme .bg-\[\#1a1a1a\] {
+  background-color: #f0ebe0 !important;
+}
+
+.light-theme .hover\:bg-\[\#1a1a1a\]\/40:hover {
+  background-color: rgba(240, 235, 224, 0.4) !important;
+}
+
+.light-theme .hover\:bg-\[\#1a1a1a\]:hover {
+  background-color: #ebdcb9 !important;
+}
+
+.light-theme .hover\:bg-\[\#252525\]:hover {
+  background-color: #ebdcb9 !important;
+}
+
+.light-theme .bg-\[\#1f1f1f\] {
+  background-color: #e8e4da !important;
+}
+
+.light-theme .bg-black\/75 {
+  background-color: rgba(34, 33, 31, 0.55) !important;
+  backdrop-filter: blur(4px);
+}
+
+/* Borders */
+.light-theme .border-\[\#222\] {
+  border-color: #e3ded5 !important;
+}
+
+.light-theme .border-r {
+  border-right-color: #e3ded5 !important;
+}
+
+.light-theme .border-b {
+  border-bottom-color: #e3ded5 !important;
+}
+
+.light-theme .border-t {
+  border-top-color: #e3ded5 !important;
+}
+
+.light-theme .border-\[\#222\]\/80 {
+  border-color: #e3ded5 !important;
+}
+
+.light-theme .border-\[\#222\]\/20 {
+  border-color: rgba(227, 222, 213, 0.3) !important;
+}
+
+.light-theme .border-dashed {
+  border-style: dashed !important;
+}
+
+/* Headings and Texts */
+.light-theme .text-\[\#e4e3e0\] {
+  color: #22211f !important;
+}
+
+.light-theme .text-\[\#e4e3e0\]\/30 {
+  color: rgba(34, 33, 31, 0.35) !important;
+}
+
+.light-theme .text-\[\#e4e3e0\]\/40 {
+  color: rgba(34, 33, 31, 0.45) !important;
+}
+
+.light-theme .text-\[\#e4e3e0\]\/50 {
+  color: rgba(34, 33, 31, 0.55) !important;
+}
+
+.light-theme .text-\[\#e4e3e0\]\/60 {
+  color: rgba(34, 33, 31, 0.65) !important;
+}
+
+.light-theme .text-\[\#e4e3e0\]\/70 {
+  color: rgba(34, 33, 31, 0.75) !important;
+}
+
+.light-theme .text-\[\#e4e3e0\]\/80 {
+  color: rgba(34, 33, 31, 0.85) !important;
+}
+
+.light-theme .text-\[\#c5a059\] {
+  color: #a37c35 !important;
+}
+
+.light-theme .text-[#c5a059] {
+  color: #a37c35 !important;
+}
+
+.light-theme .bg-\[\#c5a059\] {
+  background-color: #a37c35 !important;
+  color: #ffffff !important;
+}
+
+.light-theme .bg-\[\#c5a059\]\/10 {
+  background-color: rgba(163, 124, 53, 0.1) !important;
+}
+
+/* Green (Income) text and bg */
+.light-theme .text-\[\#66bb6a\] {
+  color: #2e7d32 !important;
+}
+.light-theme .text-emerald-500 {
+  color: #2e7d32 !important;
+}
+.light-theme .text-emerald-400 {
+  color: #2e7d32 !important;
+}
+.light-theme .bg-emerald-950\/40 {
+  background-color: rgba(46, 125, 50, 0.08) !important;
+  color: #2e7d32 !important;
+}
+.light-theme .border-emerald-900\/40 {
+  border-color: rgba(46, 125, 50, 0.15) !important;
+}
+.light-theme .bg-emerald-950\/60 {
+  background-color: rgba(46, 125, 50, 0.12) !important;
+}
+.light-theme .bg-emerald-950\/20 {
+  background-color: rgba(46, 125, 50, 0.06) !important;
+}
+.light-theme .bg-\[\#111815\] {
+  background-color: #f1f8f3 !important;
+}
+.light-theme .border-emerald-900\/30 {
+  border-color: rgba(46, 125, 50, 0.15) !important;
+}
+.light-theme .bg-\[\#66bb6a\]\/15 {
+  background-color: rgba(46, 125, 50, 0.08) !important;
+}
+.light-theme .border-\[\#66bb6a\]\/30 {
+  border-color: rgba(46, 125, 50, 0.15) !important;
+}
+
+/* Red (Expense) text and bg */
+.light-theme .text-\[\#ff5555\] {
+  color: #c62828 !important;
+}
+.light-theme .text-rose-500 {
+  color: #c62828 !important;
+}
+.light-theme .text-rose-400 {
+  color: #c62828 !important;
+}
+.light-theme .bg-rose-950\/40 {
+  background-color: rgba(198, 40, 40, 0.08) !important;
+  color: #c62828 !important;
+}
+.light-theme .border-rose-900\/40 {
+  border-color: rgba(198, 40, 40, 0.15) !important;
+}
+.light-theme .bg-rose-950\/60 {
+  background-color: rgba(198, 40, 40, 0.12) !important;
+}
+.light-theme .bg-\[\#221215\] {
+  background-color: #fdf2f2 !important;
+}
+.light-theme .border-rose-900\/30 {
+  border-color: rgba(198, 40, 40, 0.15) !important;
+}
+.light-theme .bg-\[\#ff5555\]\/15 {
+  background-color: rgba(198, 40, 40, 0.08) !important;
+}
+.light-theme .border-\[\#ff5555\]\/30 {
+  border-color: rgba(198, 40, 40, 0.15) !important;
+}
+
+/* Amber (FD/Assets) text and bg */
+.light-theme .text-amber-400 {
+  color: #b0811e !important;
+}
+.light-theme .bg-amber-950\/40 {
+  background-color: rgba(176, 129, 30, 0.08) !important;
+  color: #b0811e !important;
+}
+.light-theme .border-amber-900\/40 {
+  border-color: rgba(176, 129, 30, 0.15) !important;
+}
+.light-theme .bg-amber-950\/60 {
+  background-color: rgba(176, 129, 30, 0.12) !important;
+}
+.light-theme .bg-\[\#1a1813\] {
+  background-color: #fffaf0 !important;
+}
+.light-theme .border-amber-900\/30 {
+  border-color: rgba(176, 129, 30, 0.15) !important;
+}
+
+/* Indigo (Blue/Special) text and bg */
+.light-theme .text-indigo-400 {
+  color: #1565c0 !important;
+}
+.light-theme .bg-indigo-950\/60 {
+  background-color: rgba(21, 101, 192, 0.12) !important;
+}
+.light-theme .bg-\[\#12141c\] {
+  background-color: #f5f8fd !important;
+}
+.light-theme .border-indigo-900\/30 {
+  border-color: rgba(21, 101, 192, 0.15) !important;
+}
+
+/* Wing Status Map specific */
+.light-theme .text-amber-500 {
+  color: #a37c35 !important;
+}
+.light-theme .text-[#b08c46] {
+  color: #a37c35 !important;
+}
+
+/* SVG trends axes */
+.light-theme svg line {
+  stroke: #e3ded5 !important;
+}
+.light-theme svg text {
+  fill: rgba(34, 33, 31, 0.5) !important;
+}
+
+/* Divider colors */
+.light-theme .divide-\[\#222\]\/55 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e3ded5 !important;
+}
+
+/* Custom shadow adjustments for light theme */
+.light-theme .shadow-xl {
+  shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+}
+
+.light-theme .shadow-2xl {
+  shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08) !important;
 }

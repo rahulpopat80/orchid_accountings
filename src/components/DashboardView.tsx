@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Transaction, SummaryCards } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -13,24 +13,66 @@ import {
   Info,
   Layers,
   ChevronRight,
-  Filter
+  Filter,
+  ShieldCheck,
+  ShieldAlert,
+  CreditCard,
+  CheckCircle2,
+  X,
+  HelpCircle
 } from 'lucide-react';
+import { calculateMaintenancePayments } from '../utils';
 
 interface DashboardViewProps {
   transactions: Transaction[];
   summary: SummaryCards;
   onNavigateToLedger: (filterType?: 'Income' | 'Expense') => void;
   onNavigateToMaintenance: () => void;
+  onAddTransaction?: (transaction: Omit<Transaction, 'id' | 'parsedDate' | 'monthYear'>) => void;
+  role?: 'admin' | 'resident';
+  selectedUnit?: string;
+  parsedUnit?: { wing: 'A' | 'B'; block: string };
 }
 
 export default function DashboardView({ 
   transactions, 
   summary, 
   onNavigateToLedger,
-  onNavigateToMaintenance 
+  onNavigateToMaintenance,
+  onAddTransaction,
+  role = 'admin',
+  selectedUnit = 'Wing A - Block 901',
+  parsedUnit = { wing: 'A', block: '901' }
 }: DashboardViewProps) {
   const [chartMode, setChartMode] = useState<'monthly' | 'categories'>('monthly');
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+
+  // Simulated Payment Form State
+  const [isPayModalOpen, setIsPayModalOpen] = useState(false);
+  const [payAmount, setPayAmount] = useState('24000');
+  const [payMode, setPayMode] = useState('Bank: JCOM');
+  const [payRef, setPayRef] = useState('');
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  // Dynamic calculations for Resident profile
+  const activeResidentName = useMemo(() => {
+    // Find the resident's registered name in the transactions
+    const found = transactions.find(
+      t => t.wing === parsedUnit.wing && t.block === parsedUnit.block && t.residentName
+    );
+    return found?.residentName || 'Honorable Resident Member';
+  }, [transactions, parsedUnit]);
+
+  const paymentStatus = useMemo(() => {
+    const stats = calculateMaintenancePayments(transactions);
+    const wingList = parsedUnit.wing === 'A' ? stats.wingA : stats.wingB;
+    return wingList.find(b => b.block === parsedUnit.block) || { 
+      block: parsedUnit.block, 
+      residentName: activeResidentName, 
+      hasPaid: false, 
+      amountPaid: 0 
+    };
+  }, [transactions, parsedUnit, activeResidentName]);
   
   // Format currency in Indian Rupees format (or generic human readable)
   const formatCurrency = (val: number) => {
@@ -117,8 +159,96 @@ export default function DashboardView({
     ...monthlyTrendData.map(d => Math.max(d.income, d.expense, 50000))
   ) * 1.15; // 15% buffer
 
+  const handleResidentPaySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!onAddTransaction) return;
+
+    // Get current date formatted as DD-MM-YYYY
+    const today = new Date();
+    const d = String(today.getDate()).padStart(2, '0');
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const y = today.getFullYear();
+    const formattedDate = `${d}-${m}-${y}`;
+
+    onAddTransaction({
+      date: formattedDate,
+      type: 'Income',
+      headId: `Income_Maintenance`,
+      category: 'Maintenance Charges Income',
+      amount: parseFloat(payAmount) || 24000,
+      mode: payMode,
+      reference: payRef || `SIM-${Math.floor(100000 + Math.random() * 900000)}`,
+      description: `Wing ${parsedUnit.wing} - Block ${parsedUnit.block} - ${activeResidentName}`,
+      wing: parsedUnit.wing,
+      block: parsedUnit.block,
+      residentName: activeResidentName
+    });
+
+    setPaymentSuccess(true);
+    setTimeout(() => {
+      setPaymentSuccess(false);
+      setIsPayModalOpen(false);
+      setPayRef('');
+    }, 2000);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Resident Portal Box (Only shown if role is 'resident') */}
+      {role === 'resident' && (
+        <div className="bg-[#111111] border border-[#c5a059]/40 p-6 rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-xl relative overflow-hidden">
+          {/* Subtle gold accent beam */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#c5a059]/60 to-transparent"></div>
+          
+          <div className="space-y-2">
+            <span className="text-[10px] font-mono text-[#c5a059] bg-[#1a110e] border border-[#c5a059]/30 px-2.5 py-0.5 rounded uppercase tracking-wider font-bold">
+              Secure Resident Portal
+            </span>
+            <h3 className="text-xl font-serif italic text-[#e4e3e0]">{activeResidentName}</h3>
+            <p className="text-xs text-[#e4e3e0]/50 font-mono">
+              UNIT LOCATION: <span className="text-[#c5a059]">WING {parsedUnit.wing} • SUITE {parsedUnit.block}</span>
+            </p>
+          </div>
+
+          {/* Dues Card Block */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto">
+            <div className={`p-4 rounded border flex items-center gap-3 w-full sm:w-64 ${
+              paymentStatus.hasPaid 
+                ? 'bg-emerald-950/20 border-emerald-900/30 text-[#66bb6a]' 
+                : 'bg-rose-950/20 border-rose-900/30 text-[#ff5555]'
+            }`}>
+              {paymentStatus.hasPaid ? (
+                <ShieldCheck className="w-8 h-8 shrink-0 text-emerald-500 animate-pulse" />
+              ) : (
+                <ShieldAlert className="w-8 h-8 shrink-0 text-rose-500" />
+              )}
+              <div className="text-xs">
+                <p className="font-mono uppercase tracking-wider text-[9px] opacity-60">Maintenance Dues Status</p>
+                <p className="font-serif italic font-bold text-sm mt-0.5">
+                  {paymentStatus.hasPaid ? 'Paid & Compliant' : 'Outstanding Dues'}
+                </p>
+                <p className="font-mono text-[10px] mt-0.5 text-[#e4e3e0]/60">
+                  {paymentStatus.hasPaid 
+                    ? `Cleared: ${formatCurrency(paymentStatus.amountPaid)} on ${paymentStatus.lastPaymentDate || 'N/A'}` 
+                    : `Expected Amount: ${formatCurrency(24000)}`}
+                </p>
+              </div>
+            </div>
+
+            {/* Sim Dues Pay Trigger */}
+            {!paymentStatus.hasPaid && (
+              <button
+                onClick={() => setIsPayModalOpen(true)}
+                className="flex items-center justify-center gap-2 bg-[#c5a059] hover:bg-[#b08c46] text-[#080808] px-5 py-3 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer shrink-0 shadow-lg shadow-[#c5a059]/10"
+              >
+                <CreditCard className="w-4 h-4" />
+                Submit Dues Payment
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Visual Identity Greeting */}
       <div id="dashboard-hero" className="flex flex-col lg:flex-row lg:items-center lg:justify-between bg-[#111111] border border-[#222] p-8 rounded-lg gap-6 shadow-xl">
         <div>
@@ -517,6 +647,123 @@ export default function DashboardView({
           </div>
         </div>
       </div>
+
+      {/* SIMULATED PAYMENT MODAL */}
+      <AnimatePresence>
+        {isPayModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+              onClick={() => setIsPayModalOpen(false)}
+            ></motion.div>
+
+            <motion.div 
+              initial={{ scale: 0.95, y: 15, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 15, opacity: 0 }}
+              className="bg-[#111111] border border-[#c5a059]/40 rounded-lg p-6 max-w-md w-full relative z-10 shadow-2xl text-left"
+            >
+              <button 
+                onClick={() => setIsPayModalOpen(false)}
+                className="absolute top-4 right-4 text-[#e4e3e0]/40 hover:text-[#e4e3e0] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              {paymentSuccess ? (
+                <div className="text-center py-8 space-y-4">
+                  <motion.div 
+                    initial={{ scale: 0.5, rotate: -45 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    className="inline-flex p-3 bg-emerald-950/40 text-[#66bb6a] rounded-full border border-emerald-900/40"
+                  >
+                    <CheckCircle2 className="w-12 h-12" />
+                  </motion.div>
+                  <h3 className="text-lg font-serif italic text-[#e4e3e0]">Payment Receipt Logged!</h3>
+                  <p className="text-xs text-[#e4e3e0]/60 max-w-sm mx-auto font-mono leading-relaxed">
+                    ₹{parseFloat(payAmount).toLocaleString('en-IN')} has been added to the secure society ledger. Your unit dues status is now marked as COMPLIANT.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleResidentPaySubmit} className="space-y-4">
+                  <div className="border-b border-[#222] pb-3">
+                    <h3 className="text-lg font-serif italic text-[#c5a059]">Submit Maintenance Dues</h3>
+                    <p className="text-xs text-[#e4e3e0]/40 font-mono mt-0.5">Quick Payment Receipt Generator</p>
+                  </div>
+
+                  <div className="space-y-3.5 text-xs font-mono">
+                    <div>
+                      <label className="block text-[10px] text-[#e4e3e0]/40 uppercase mb-1.5 font-bold">Unit / Resident</label>
+                      <div className="bg-[#0c0c0c] border border-[#222] px-3 py-2 rounded text-[#e4e3e0]/80">
+                        {selectedUnit} — {activeResidentName}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] text-[#e4e3e0]/40 uppercase mb-1.5 font-bold">Amount (INR)</label>
+                        <input
+                          type="number"
+                          value={payAmount}
+                          onChange={(e) => setPayAmount(e.target.value)}
+                          className="w-full bg-[#0c0c0c] border border-[#222] px-3 py-2 rounded text-[#e4e3e0] focus:outline-none focus:border-[#c5a059]"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-[#e4e3e0]/40 uppercase mb-1.5 font-bold">Payment Mode</label>
+                        <select
+                          value={payMode}
+                          onChange={(e) => setPayMode(e.target.value)}
+                          className="w-full bg-[#0c0c0c] border border-[#222] px-3 py-2 rounded text-[#e4e3e0] focus:outline-none focus:border-[#c5a059] cursor-pointer"
+                        >
+                          <option value="Bank: JCOM">Bank (JCOM)</option>
+                          <option value="Bank: CBI">Bank (CBI)</option>
+                          <option value="UPI">UPI Transfer</option>
+                          <option value="Cheque">Cheque Payment</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-[#e4e3e0]/40 uppercase mb-1.5 font-bold flex justify-between">
+                        <span>Transaction Reference / UTR</span>
+                        <span className="text-[9px] text-[#c5a059]/60 lowercase normal-case italic">(Optional - auto if empty)</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. UTR8273928122"
+                        value={payRef}
+                        onChange={(e) => setPayRef(e.target.value)}
+                        className="w-full bg-[#0c0c0c] border border-[#222] px-3 py-2 rounded text-[#e4e3e0] focus:outline-none focus:border-[#c5a059]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2.5 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsPayModalOpen(false)}
+                      className="w-1/2 border border-[#222] hover:bg-[#1a1a1a] text-[#e4e3e0] py-2.5 rounded text-xs uppercase tracking-wider font-semibold cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="w-1/2 bg-[#c5a059] hover:bg-[#b08c46] text-[#080808] py-2.5 rounded text-xs uppercase tracking-wider font-bold transition cursor-pointer"
+                    >
+                      Pay Now
+                    </button>
+                  </div>
+                </form>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

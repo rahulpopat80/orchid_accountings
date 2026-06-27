@@ -7,6 +7,7 @@ import DashboardView from './components/DashboardView';
 import LedgerView from './components/LedgerView';
 import MaintenanceMapView from './components/MaintenanceMapView';
 import CSVHandler from './components/CSVHandler';
+import ReportsView from './components/ReportsView';
 
 import { 
   Building2, 
@@ -16,14 +17,56 @@ import {
   RefreshCw, 
   Clock, 
   HelpCircle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  FileText,
+  Users,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'ledger' | 'maintenance' | 'sync'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'ledger' | 'maintenance' | 'reports' | 'sync'>('dashboard');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [systemTime, setSystemTime] = useState(new Date('2026-06-26T20:36:20-07:00'));
+  
+  // Theme Preference state
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('theme') as 'dark' | 'light') || 'dark';
+  });
+
+  // User Role & Unit state
+  const [role, setRole] = useState<'admin' | 'resident'>('admin');
+  const [selectedUnit, setSelectedUnit] = useState('Wing A - Block 901');
+
+  const toggleTheme = () => {
+    setTheme(prev => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('theme', next);
+      return next;
+    });
+  };
+
+  const parsedUnit = useMemo(() => {
+    const match = selectedUnit.match(/Wing\s+([A-B])\s*-\s*Block\s*(\d+)/i);
+    if (match) {
+      return { wing: match[1] as 'A' | 'B', block: match[2] };
+    }
+    return { wing: 'A' as 'A' | 'B', block: '901' };
+  }, [selectedUnit]);
+
+  const residentUnits = useMemo(() => {
+    return [
+      'Wing A - Block 101',
+      'Wing A - Block 201',
+      'Wing A - Block 402',
+      'Wing A - Block 901',
+      'Wing B - Block 202',
+      'Wing B - Block 404',
+      'Wing B - Block 702',
+      'Wing B - Block 901'
+    ];
+  }, []);
 
   // Load initial dataset on mount
   useEffect(() => {
@@ -120,86 +163,164 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#080808] text-[#e4e3e0] font-sans flex flex-col md:flex-row antialiased">
+    <div className={`min-h-screen ${theme === 'light' ? 'light-theme bg-[#fcfbf9] text-[#22211f]' : 'bg-[#080808] text-[#e4e3e0]'} font-sans flex flex-col md:flex-row antialiased`}>
       {/* Sidebar Navigation */}
-      <aside className="w-full md:w-64 bg-[#111111] text-[#e4e3e0] shrink-0 border-b md:border-b-0 md:border-r border-[#222] flex flex-col">
-        {/* Brand Header */}
-        <div className="p-8 border-b border-[#222]">
-          <h1 className="font-serif italic text-2xl text-[#c5a059] leading-none">Orchid Heights</h1>
-          <span className="text-[10px] font-mono font-medium text-[#e4e3e0]/40 uppercase tracking-[0.2em] mt-2.5 inline-block">Accountings</span>
+      <aside className="w-full md:w-64 bg-[#111111] text-[#e4e3e0] shrink-0 border-b md:border-b-0 md:border-r border-[#222] flex flex-col justify-between">
+        <div className="flex flex-col">
+          {/* Brand Header with Theme Switcher */}
+          <div className="p-6 border-b border-[#222] flex justify-between items-start">
+            <div>
+              <h1 className="font-serif italic text-xl text-[#c5a059] leading-none">Orchid Heights</h1>
+              <span className="text-[10px] font-mono font-medium text-[#e4e3e0]/40 uppercase tracking-[0.2em] mt-2 inline-block">Accountings</span>
+            </div>
+            <button
+              onClick={toggleTheme}
+              className="p-1.5 rounded bg-[#1a1a1a] hover:bg-[#252525] border border-[#222] text-[#c5a059] transition cursor-pointer shrink-0"
+              title={theme === 'dark' ? "Switch to Light Theme" : "Switch to Dark Theme"}
+            >
+              {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+
+          {/* Navigation items */}
+          <nav className="p-4 space-y-1.5">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs uppercase tracking-wider font-semibold transition-all duration-200 ${
+                activeTab === 'dashboard' 
+                  ? 'bg-[#1a1a1a] text-[#c5a059] border border-[#222]/80 shadow-md shadow-black/40' 
+                  : 'text-[#e4e3e0]/60 hover:text-[#e4e3e0] hover:bg-[#1a1a1a]/40'
+              }`}
+            >
+              <LayoutDashboard className="w-3.5 h-3.5 shrink-0" />
+              Dashboard
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('ledger')}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs uppercase tracking-wider font-semibold transition-all duration-200 ${
+                activeTab === 'ledger' 
+                  ? 'bg-[#1a1a1a] text-[#c5a059] border border-[#222]/80 shadow-md shadow-black/40' 
+                  : 'text-[#e4e3e0]/60 hover:text-[#e4e3e0] hover:bg-[#1a1a1a]/40'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 shrink-0" />
+              Voucher Ledger
+            </button>
+
+            <button
+              onClick={() => setActiveTab('reports')}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs uppercase tracking-wider font-semibold transition-all duration-200 ${
+                activeTab === 'reports' 
+                  ? 'bg-[#1a1a1a] text-[#c5a059] border border-[#222]/80 shadow-md shadow-black/40' 
+                  : 'text-[#e4e3e0]/60 hover:text-[#e4e3e0] hover:bg-[#1a1a1a]/40'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5 shrink-0" />
+              Financial Reports
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('maintenance')}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs uppercase tracking-wider font-semibold transition-all duration-200 ${
+                activeTab === 'maintenance' 
+                  ? 'bg-[#1a1a1a] text-[#c5a059] border border-[#222]/80 shadow-md shadow-black/40' 
+                  : 'text-[#e4e3e0]/60 hover:text-[#e4e3e0] hover:bg-[#1a1a1a]/40'
+              }`}
+            >
+              <Building className="w-3.5 h-3.5 shrink-0" />
+              Wing Status Map
+            </button>
+            
+            {role === 'admin' && (
+              <button
+                onClick={() => setActiveTab('sync')}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-xs uppercase tracking-wider font-semibold transition-all duration-200 ${
+                  activeTab === 'sync' 
+                    ? 'bg-[#1a1a1a] text-[#c5a059] border border-[#222]/80 shadow-md shadow-black/40' 
+                    : 'text-[#e4e3e0]/60 hover:text-[#e4e3e0] hover:bg-[#1a1a1a]/40'
+                }`}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
+                Spreadsheet Sync
+              </button>
+            )}
+          </nav>
         </div>
 
-        {/* Navigation items */}
-        <nav className="flex-grow p-4 space-y-1.5">
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-xs uppercase tracking-wider font-semibold transition-all duration-200 ${
-              activeTab === 'dashboard' 
-                ? 'bg-[#1a1a1a] text-[#c5a059] border border-[#222]/80 shadow-md shadow-black/40' 
-                : 'text-[#e4e3e0]/60 hover:text-[#e4e3e0] hover:bg-[#1a1a1a]/40'
-            }`}
-          >
-            <LayoutDashboard className="w-3.5 h-3.5 shrink-0" />
-            Dashboard
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('ledger')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-xs uppercase tracking-wider font-semibold transition-all duration-200 ${
-              activeTab === 'ledger' 
-                ? 'bg-[#1a1a1a] text-[#c5a059] border border-[#222]/80 shadow-md shadow-black/40' 
-                : 'text-[#e4e3e0]/60 hover:text-[#e4e3e0] hover:bg-[#1a1a1a]/40'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5 shrink-0" />
-            Voucher Ledger
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('maintenance')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-xs uppercase tracking-wider font-semibold transition-all duration-200 ${
-              activeTab === 'maintenance' 
-                ? 'bg-[#1a1a1a] text-[#c5a059] border border-[#222]/80 shadow-md shadow-black/40' 
-                : 'text-[#e4e3e0]/60 hover:text-[#e4e3e0] hover:bg-[#1a1a1a]/40'
-            }`}
-          >
-            <Building className="w-3.5 h-3.5 shrink-0" />
-            Wing Status Map
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('sync')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-xs uppercase tracking-wider font-semibold transition-all duration-200 ${
-              activeTab === 'sync' 
-                ? 'bg-[#1a1a1a] text-[#c5a059] border border-[#222]/80 shadow-md shadow-black/40' 
-                : 'text-[#e4e3e0]/60 hover:text-[#e4e3e0] hover:bg-[#1a1a1a]/40'
-            }`}
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 shrink-0" />
-            Spreadsheet Sync
-          </button>
-        </nav>
+        <div>
+          {/* Role Selector Widget */}
+          <div className="p-4 mx-4 mb-4 rounded bg-[#0c0c0c]/60 border border-[#222]">
+            <label className="block text-[9px] font-mono text-[#e4e3e0]/40 uppercase tracking-widest mb-1.5 font-bold flex items-center gap-1">
+              <Users className="w-3 h-3 text-[#c5a059]" />
+              Access Role
+            </label>
+            <div className="grid grid-cols-2 gap-1 bg-[#080808] p-1 border border-[#222] rounded">
+              <button
+                onClick={() => {
+                  setRole('admin');
+                  if (activeTab === 'sync') setActiveTab('dashboard');
+                }}
+                className={`py-1 text-[10px] font-mono uppercase tracking-wider font-bold rounded transition cursor-pointer ${
+                  role === 'admin' 
+                    ? 'bg-[#1a1a1a] text-[#c5a059] border border-[#222]/40 shadow' 
+                    : 'text-[#e4e3e0]/40 hover:text-[#e4e3e0]'
+                }`}
+              >
+                Admin
+              </button>
+              <button
+                onClick={() => {
+                  setRole('resident');
+                  if (activeTab === 'sync') setActiveTab('dashboard');
+                }}
+                className={`py-1 text-[10px] font-mono uppercase tracking-wider font-bold rounded transition cursor-pointer ${
+                  role === 'resident' 
+                    ? 'bg-[#1a1a1a] text-[#c5a059] border border-[#222]/40 shadow' 
+                    : 'text-[#e4e3e0]/40 hover:text-[#e4e3e0]'
+                }`}
+              >
+                Resident
+              </button>
+            </div>
 
-        {/* Footer info & clock */}
-        <div className="p-6 border-t border-[#222] bg-[#0c0c0c]/40 text-[11px] font-mono text-[#e4e3e0]/40 space-y-2.5">
-          <div className="flex items-center gap-2">
-            <Clock className="w-3.5 h-3.5 text-[#c5a059]/80 shrink-0" />
-            <span>
-              {systemTime.toLocaleDateString(undefined, {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-              })} {systemTime.toLocaleTimeString(undefined, {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-              })}
-            </span>
+            {role === 'resident' && (
+              <div className="mt-3.5 space-y-1">
+                <label className="block text-[8px] font-mono text-[#e4e3e0]/40 uppercase tracking-wider font-semibold">Select My Unit:</label>
+                <select
+                  value={selectedUnit}
+                  onChange={(e) => setSelectedUnit(e.target.value)}
+                  className="w-full bg-[#080808] border border-[#222] text-[#e4e3e0] text-[11px] px-2 py-1 rounded font-mono focus:outline-none focus:ring-1 focus:ring-[#c5a059] cursor-pointer"
+                >
+                  {residentUnits.map(unit => (
+                    <option key={unit} value={unit}>{unit}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
-          <div className="flex items-center justify-between text-[10px]">
-            <span>SERVER: SECURE_RUN</span>
-            <span className="text-emerald-500 font-bold">● ONLINE</span>
+
+          {/* Footer info & clock */}
+          <div className="p-6 border-t border-[#222] bg-[#0c0c0c]/40 text-[11px] font-mono text-[#e4e3e0]/40 space-y-2.5">
+            <div className="flex items-center gap-2">
+              <Clock className="w-3.5 h-3.5 text-[#c5a059]/80 shrink-0" />
+              <span>
+                {systemTime.toLocaleDateString(undefined, {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                })} {systemTime.toLocaleTimeString(undefined, {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                  hour12: false
+                })}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-[10px]">
+              <span>SERVER: SECURE_RUN</span>
+              <span className="text-emerald-500 font-bold">● ONLINE</span>
+            </div>
           </div>
         </div>
       </aside>
@@ -221,6 +342,10 @@ export default function App() {
                 summary={accountingSummary}
                 onNavigateToLedger={handleNavigateToLedger}
                 onNavigateToMaintenance={handleNavigateToMaintenance}
+                onAddTransaction={handleAddTransaction}
+                role={role}
+                selectedUnit={selectedUnit}
+                parsedUnit={parsedUnit}
               />
             )}
 
@@ -231,6 +356,15 @@ export default function App() {
                 onEditTransaction={handleEditTransaction}
                 onDeleteTransaction={handleDeleteTransaction}
                 onExportCSV={handleExportCSV}
+                role={role}
+                selectedUnit={selectedUnit}
+              />
+            )}
+
+            {activeTab === 'reports' && (
+              <ReportsView
+                transactions={transactions}
+                summary={accountingSummary}
               />
             )}
 
@@ -240,7 +374,7 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'sync' && (
+            {activeTab === 'sync' && role === 'admin' && (
               <CSVHandler
                 onDataLoaded={handleDataSync}
                 onResetToDefault={handleResetToDefault}
@@ -253,4 +387,5 @@ export default function App() {
     </div>
   );
 }
+
 
