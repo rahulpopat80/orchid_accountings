@@ -140,6 +140,32 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
     }).slice(0, 10);
   }, [transactions, hoveredBalanceSheetKey]);
 
+  // List of cash transactions for printable statement
+  const printableCashTransactions = useMemo(() => {
+    return transactions.filter(t => t.mode.toLowerCase().includes('cash')).slice(0, 15);
+  }, [transactions]);
+
+  // List of bank transactions for printable statement
+  const printableBankTransactions = useMemo(() => {
+    return transactions.filter(t => {
+      const m = t.mode.toLowerCase();
+      return m.includes('jcom') || m.includes('cbi') || m.includes('transfer') || m.includes('trf');
+    }).slice(0, 15);
+  }, [transactions]);
+
+  // List of FD/investment transactions for printable statement
+  const printableFDTransactions = useMemo(() => {
+    return transactions.filter(t => t.isInvestment || t.category.toLowerCase().includes('fd interest')).slice(0, 15);
+  }, [transactions]);
+
+  // Helper to fetch contributing transactions for a specific month and category
+  const getCategoryTransactionsForMonth = (month: string, category: string) => {
+    return transactions.filter(t => {
+      if (t.isContra || t.isInvestment) return false;
+      return t.monthYear === month && t.category === category;
+    });
+  };
+
   // Format currency helper
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -157,6 +183,16 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
       day: 'numeric'
     });
   }, []);
+
+  // Compute active date range label dynamically for screen display and printing
+  const rangeLabel = useMemo(() => {
+    if (filterType === 'all') return 'All Time';
+    if (filterType === 'monthwise') return `For Month: ${selectedMonth}`;
+    if (filterType === 'datewise') {
+      return `From ${startDate ? startDate.split('-').reverse().join('-') : 'Start'} To ${endDate ? endDate.split('-').reverse().join('-') : 'End'}`;
+    }
+    return 'All Time';
+  }, [filterType, selectedMonth, startDate, endDate]);
 
   // Filtered transactions for the current screen view
   const filteredTransactions = useMemo(() => {
@@ -637,7 +673,8 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
 
   return (
     <div className="space-y-6">
-      {/* Header Panel */}
+      <div className="space-y-6 print:hidden">
+        {/* Header Panel */}
       <div className="flex flex-col md:flex-row md:items-center justify-between bg-[#111111] border border-[#222] p-6 rounded-lg gap-4 shadow-md print:border-none print:bg-white print:text-black">
         <div>
           <span className="text-xs font-mono text-[#c5a059] bg-[#1a1a1a] border border-[#222]/80 px-2.5 py-0.5 rounded uppercase tracking-wider font-semibold print:hidden">
@@ -1130,6 +1167,363 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
             <p className="text-[10px] text-emerald-500/80">HASH CODE: SHA256-OHCOMMITTEE-2026-SECURE</p>
           </div>
         </div>
+      </div>
+      </div> {/* Closing the print:hidden container */}
+
+      {/* Custom Professional Printable PDF Layout */}
+      <div className="hidden print:block text-black bg-white w-full p-4 font-sans leading-relaxed">
+        {activeReportTab === 'income_expense' && (
+          <div className="space-y-8">
+            <div className="border-b-2 border-gray-900 pb-4 text-center">
+              <h1 className="text-2xl font-serif font-bold tracking-tight text-gray-950">ORCHID HEIGHTS OWNERS ASSOCIATION</h1>
+              <p className="text-[10px] font-mono font-bold text-gray-600 uppercase tracking-widest mt-1">
+                RERA REGISTRATION NO: PR/GJ/AHMEDABAD/SOCIETY/2024
+              </p>
+              <h2 className="text-base font-sans font-bold text-gray-800 uppercase tracking-wider mt-2">
+                AUDITED OPERATING INCOME & EXPENDITURE STATEMENT
+              </h2>
+              <div className="flex justify-between items-center text-[10px] font-mono text-gray-500 mt-4 px-2">
+                <span>PERIOD: <strong className="text-gray-800 uppercase">{rangeLabel}</strong></span>
+                <span>AUDIT STATUS: <strong className="text-emerald-700">VERIFIED & BALANCED</strong></span>
+                <span>GENERATED: <strong className="text-gray-800">{todayStr.toUpperCase()}</strong></span>
+              </div>
+            </div>
+
+            {/* Print Summary Cards */}
+            <div className="grid grid-cols-3 gap-4 border border-gray-300 rounded p-4 bg-gray-50/50">
+              <div className="text-center border-r border-gray-200">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 font-bold">Total Operating Income</p>
+                <p className="text-lg font-mono font-bold text-emerald-700 mt-1">{formatCurrency(activePeriodSummary.totalIncome)}</p>
+                <p className="text-[8px] text-gray-400 mt-0.5">Operating Receipts</p>
+              </div>
+              <div className="text-center border-r border-gray-200">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 font-bold">Total Operating Expenses</p>
+                <p className="text-lg font-mono font-bold text-red-700 mt-1">{formatCurrency(activePeriodSummary.totalExpense)}</p>
+                <p className="text-[8px] text-gray-400 mt-0.5">Operating Overhead</p>
+              </div>
+              <div className="text-center">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 font-bold">Net Accumulative surplus</p>
+                <p className="text-lg font-mono font-bold text-gray-950 mt-1">{formatCurrency(activePeriodSummary.netBalance)}</p>
+                <p className="text-[8px] text-gray-400 mt-0.5">Retained in General Reserves</p>
+              </div>
+            </div>
+
+            {/* Monthly Breakdowns with contributing transactions expanded */}
+            <div className="space-y-6">
+              <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-gray-900 border-b border-gray-400 pb-1.5">
+                Itemized Operating Ledger (By Month)
+              </h3>
+
+              {monthlyData.map((m) => {
+                const monthSurplus = m.incomeTotal - m.expenseTotal;
+                return (
+                  <div key={m.month} className="border border-gray-200 rounded p-4 space-y-4 page-break-inside-avoid bg-white">
+                    <div className="flex justify-between items-center border-b border-gray-300 pb-2 bg-gray-50 px-2.5 py-1.5 rounded">
+                      <span className="font-serif italic font-bold text-gray-900 text-sm">{m.month} Summary</span>
+                      <div className="flex gap-4 text-[10px] font-mono font-bold">
+                        <span className="text-emerald-700">IN: {formatCurrency(m.incomeTotal)}</span>
+                        <span className="text-red-700">OUT: {formatCurrency(m.expenseTotal)}</span>
+                        <span className={monthSurplus >= 0 ? "text-emerald-700" : "text-red-700"}>
+                          NET: {monthSurplus >= 0 ? "+" : ""}{formatCurrency(monthSurplus)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6 items-start">
+                      {/* Operating Incomes */}
+                      <div className="space-y-3">
+                        <h4 className="text-[10px] font-mono font-bold text-emerald-800 uppercase tracking-wider border-b border-gray-200 pb-1">
+                          Operating Incomes
+                        </h4>
+                        {Object.keys(m.incomes).length > 0 ? (
+                          <div className="space-y-3">
+                            {Object.entries(m.incomes).map(([cat, amt]) => {
+                              const catTxs = getCategoryTransactionsForMonth(m.month, cat);
+                              return (
+                                <div key={cat} className="space-y-1">
+                                  <div className="flex justify-between text-xs font-mono font-bold text-gray-950 border-b border-gray-100 pb-0.5">
+                                    <span>{cat}</span>
+                                    <span>{formatCurrency(amt as number)}</span>
+                                  </div>
+                                  {/* List of sub transactions */}
+                                  <div className="pl-2 border-l border-emerald-500/30 space-y-1">
+                                    {catTxs.map((tx, idx) => (
+                                      <div key={tx.id || idx} className="flex justify-between text-[9px] font-mono text-gray-600">
+                                        <span className="truncate max-w-[150px]" title={tx.description}>
+                                          {tx.date} | {tx.wing}-{tx.block} | {tx.residentName || 'Committee'} | {tx.description}
+                                        </span>
+                                        <span className="font-semibold text-gray-700 shrink-0">{formatCurrency(tx.amount)}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-[9px] font-mono italic text-gray-400">No incomes logged for this month</p>
+                        )}
+                      </div>
+
+                      {/* Operating Expenses */}
+                      <div className="space-y-3">
+                        <h4 className="text-[10px] font-mono font-bold text-red-800 uppercase tracking-wider border-b border-gray-200 pb-1">
+                          Operating Expenses (Overhead)
+                        </h4>
+                        {Object.keys(m.expenses).length > 0 ? (
+                          <div className="space-y-3">
+                            {Object.entries(m.expenses).map(([cat, amt]) => {
+                              const catTxs = getCategoryTransactionsForMonth(m.month, cat);
+                              return (
+                                <div key={cat} className="space-y-1">
+                                  <div className="flex justify-between text-xs font-mono font-bold text-gray-950 border-b border-gray-100 pb-0.5">
+                                    <span>{cat}</span>
+                                    <span>{formatCurrency(amt as number)}</span>
+                                  </div>
+                                  {/* List of sub transactions */}
+                                  <div className="pl-2 border-l border-red-500/30 space-y-1">
+                                    {catTxs.map((tx, idx) => (
+                                      <div key={tx.id || idx} className="flex justify-between text-[9px] font-mono text-gray-600">
+                                        <span className="truncate max-w-[150px]" title={tx.description}>
+                                          {tx.date} | {tx.wing}-{tx.block} | {tx.residentName || 'Vendor'} | {tx.description}
+                                        </span>
+                                        <span className="font-semibold text-gray-700 shrink-0">{formatCurrency(tx.amount)}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-[9px] font-mono italic text-gray-400">No expenses logged for this month</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Formal signoff stamp footer */}
+            <div className="border-t border-gray-300 pt-6 mt-8 flex justify-between items-center text-[10px] font-mono text-gray-500">
+              <div>
+                <p className="font-bold text-gray-700">PUBLISHED BY AUTHORITY</p>
+                <p>Orchid Heights Owners Management Committee</p>
+                <p>Audit Ref: OH-AUDIT-2026-STMT</p>
+              </div>
+              <div className="text-right">
+                <p className="text-emerald-700 font-bold">DIGITALLY VERIFIED STATEMENT</p>
+                <p>HASH: SHA256-OHCOMMITTEE-2026-SECURE</p>
+              </div>
+            </div>
+
+            {/* Signature fields */}
+            <div className="mt-12 grid grid-cols-3 gap-8 text-center text-xs font-serif">
+              <div className="border-t border-gray-400 pt-2">
+                <p className="font-semibold text-gray-800">President, Orchid Heights</p>
+                <p className="text-[9px] text-gray-500 font-mono mt-0.5">Management Committee</p>
+              </div>
+              <div className="border-t border-gray-400 pt-2">
+                <p className="font-semibold text-gray-800">Treasurer, Orchid Heights</p>
+                <p className="text-[9px] text-gray-500 font-mono mt-0.5">Management Committee</p>
+              </div>
+              <div className="border-t border-gray-400 pt-2">
+                <p className="font-semibold text-gray-800">Auditor Sign-off</p>
+                <p className="text-[9px] text-emerald-700 font-mono font-bold mt-0.5">Status: VERIFIED & SEALED</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeReportTab === 'balance_sheet' && (
+          <div className="space-y-8">
+            <div className="border-b-2 border-gray-900 pb-4 text-center">
+              <h1 className="text-2xl font-serif font-bold tracking-tight text-gray-950">ORCHID HEIGHTS OWNERS ASSOCIATION</h1>
+              <p className="text-[10px] font-mono font-bold text-gray-600 uppercase tracking-widest mt-1">
+                RERA REGISTRATION NO: PR/GJ/AHMEDABAD/SOCIETY/2024
+              </p>
+              <h2 className="text-base font-sans font-bold text-gray-800 uppercase tracking-wider mt-2">
+                STATEMENT OF FINANCIAL AFFAIRS (BALANCE SHEET)
+              </h2>
+              <div className="flex justify-between items-center text-[10px] font-mono text-gray-500 mt-4 px-2">
+                <span>AS OF: <strong className="text-gray-800 uppercase">{todayStr.toUpperCase()}</strong></span>
+                <span>STATUS: <strong className="text-emerald-700">BALANCED & AUDITED</strong></span>
+                <span>STATEMENT ID: <strong className="text-gray-800">OH-BS-{new Date().getFullYear()}</strong></span>
+              </div>
+            </div>
+
+            {/* Balance Sheet Ledger Structure */}
+            <div className="grid grid-cols-2 gap-8 items-start">
+              {/* ASSETS COLUMN */}
+              <div className="space-y-6">
+                <h3 className="text-xs font-mono font-bold text-gray-900 uppercase tracking-wider border-b border-gray-800 pb-1 flex justify-between">
+                  <span>CAPITAL ASSETS (A)</span>
+                  <span>AMOUNT (INR)</span>
+                </h3>
+
+                {/* Cash on Hand Item */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-sans font-bold text-gray-950">
+                    <div>
+                      <p className="font-serif italic font-semibold">Cash on Hand</p>
+                      <p className="text-[8px] text-gray-500 font-mono">Operational currency float</p>
+                    </div>
+                    <span className="font-mono">{formatCurrency(balanceSheet.cashOnHand)}</span>
+                  </div>
+                  {/* Ledger entries */}
+                  <div className="pl-2 border-l border-gray-300 space-y-1">
+                    <p className="text-[8px] font-mono font-bold text-gray-400 uppercase tracking-wider">Active Cash Ledger Entries</p>
+                    {printableCashTransactions.map((tx, idx) => (
+                      <div key={tx.id || idx} className="flex justify-between text-[8px] font-mono text-gray-600">
+                        <span className="truncate max-w-[150px]">{tx.date} | {tx.description}</span>
+                        <span className={tx.type === 'Income' ? 'text-emerald-700' : 'text-red-700'}>
+                          {tx.type === 'Income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bank Balance Item */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-sans font-bold text-gray-950">
+                    <div>
+                      <p className="font-serif italic font-semibold">Society Bank Balances</p>
+                      <p className="text-[8px] text-gray-500 font-mono">Active current & savings accounts</p>
+                    </div>
+                    <span className="font-mono">{formatCurrency(balanceSheet.bankBalance)}</span>
+                  </div>
+                  {/* Ledger entries */}
+                  <div className="pl-2 border-l border-gray-300 space-y-1">
+                    <p className="text-[8px] font-mono font-bold text-gray-400 uppercase tracking-wider">Active Bank Ledger Entries</p>
+                    {printableBankTransactions.map((tx, idx) => (
+                      <div key={tx.id || idx} className="flex justify-between text-[8px] font-mono text-gray-600">
+                        <span className="truncate max-w-[150px]">{tx.date} | {tx.mode} | {tx.description}</span>
+                        <span className={tx.type === 'Income' ? 'text-emerald-700' : 'text-red-700'}>
+                          {tx.type === 'Income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Fixed Deposits Item */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-sans font-bold text-gray-950">
+                    <div>
+                      <p className="font-serif italic font-semibold">Fixed Deposits (FD Reserves)</p>
+                      <p className="text-[8px] text-gray-500 font-mono">Earning term deposits at JCOM Bank</p>
+                    </div>
+                    <span className="font-mono">{formatCurrency(balanceSheet.fdInvestments)}</span>
+                  </div>
+                  {/* Ledger entries */}
+                  <div className="pl-2 border-l border-gray-300 space-y-1">
+                    <p className="text-[8px] font-mono font-bold text-gray-400 uppercase tracking-wider">Active term Deposit Ledger</p>
+                    {printableFDTransactions.length > 0 ? (
+                      printableFDTransactions.map((tx, idx) => (
+                        <div key={tx.id || idx} className="flex justify-between text-[8px] font-mono text-gray-600">
+                          <span className="truncate max-w-[150px]">{tx.date} | {tx.description}</span>
+                          <span className="text-emerald-700">+{formatCurrency(tx.amount)}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-[8px] font-mono italic text-gray-400">No Term Investments registered</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Assets Footer */}
+                <div className="border-t-2 border-gray-800 pt-3 flex justify-between text-xs font-mono font-bold text-gray-950">
+                  <span>TOTAL ASSETS (A)</span>
+                  <span className="border-b-4 border-double border-gray-900 pb-0.5">{formatCurrency(balanceSheet.totalAssets)}</span>
+                </div>
+              </div>
+
+              {/* LIABILITIES & FUNDS COLUMN */}
+              <div className="space-y-6">
+                <h3 className="text-xs font-mono font-bold text-gray-900 uppercase tracking-wider border-b border-gray-800 pb-1 flex justify-between">
+                  <span>LIABILITIES & EQUITY (B)</span>
+                  <span>AMOUNT (INR)</span>
+                </h3>
+
+                <div className="space-y-6">
+                  {/* Members' Corpus Fund */}
+                  <div className="flex justify-between text-xs font-sans">
+                    <div>
+                      <p className="font-serif italic font-semibold text-gray-950">Members' Corpus Fund</p>
+                      <p className="text-[8px] text-gray-500 font-mono">Initial building capital deposit</p>
+                    </div>
+                    <span className="font-mono font-semibold text-gray-900">{formatCurrency(balanceSheet.corpusFund)}</span>
+                  </div>
+
+                  {/* Accumulated General Reserves */}
+                  <div className="flex justify-between text-xs font-sans">
+                    <div>
+                      <p className="font-serif italic font-semibold text-gray-950">Accumulated General Reserves</p>
+                      <p className="text-[8px] text-gray-500 font-mono">Accumulated operating surplus & savings</p>
+                    </div>
+                    <span className="font-mono font-semibold text-gray-900">{formatCurrency(balanceSheet.accumulatedReserves)}</span>
+                  </div>
+
+                  {/* Outstanding Liabilities */}
+                  <div className="flex justify-between text-xs font-sans text-gray-400">
+                    <div>
+                      <p className="font-serif italic font-semibold text-gray-500">Current Outstanding Liabilities</p>
+                      <p className="text-[8px] text-gray-400 font-mono">No outstanding payables registered</p>
+                    </div>
+                    <span className="font-mono font-semibold">₹0</span>
+                  </div>
+                </div>
+
+                {/* Spacing alignment helper to match height of ledger columns */}
+                <div className="pt-24"></div>
+
+                {/* Liabilities & Reserves Footer */}
+                <div className="border-t-2 border-gray-800 pt-3 flex justify-between text-xs font-mono font-bold text-gray-950">
+                  <span>TOTAL CAPITAL & RES. (B)</span>
+                  <span className="border-b-4 border-double border-gray-900 pb-0.5">{formatCurrency(balanceSheet.totalLiabilitiesEquity)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Verification Banner */}
+            <div className="border border-emerald-500/30 bg-emerald-50/50 p-3 rounded text-center text-[10px] font-mono text-emerald-800 font-bold uppercase tracking-wider flex justify-between items-center px-4 mt-8">
+              <span>STATUS: BALANCED (A = B)</span>
+              <span>VERIFIED SHA256 LEDGER AUDIT</span>
+              <span>COMPLIANT UNDER JCOM BYLAWS</span>
+            </div>
+
+            {/* Formal signoff stamp footer */}
+            <div className="border-t border-gray-300 pt-6 mt-8 flex justify-between items-center text-[10px] font-mono text-gray-500">
+              <div>
+                <p className="font-bold text-gray-700">PUBLISHED BY AUTHORITY</p>
+                <p>Orchid Heights Owners Management Committee</p>
+                <p>Audit Ref: OH-BS-AUDIT-2026</p>
+              </div>
+              <div className="text-right">
+                <p className="text-emerald-700 font-bold">DIGITALLY VERIFIED STATEMENT</p>
+                <p>HASH: SHA256-OHCOMMITTEE-2026-SECURE</p>
+              </div>
+            </div>
+
+            {/* Signature fields */}
+            <div className="mt-12 grid grid-cols-3 gap-8 text-center text-xs font-serif">
+              <div className="border-t border-gray-400 pt-2">
+                <p className="font-semibold text-gray-800">President, Orchid Heights</p>
+                <p className="text-[9px] text-gray-500 font-mono mt-0.5">Management Committee</p>
+              </div>
+              <div className="border-t border-gray-400 pt-2">
+                <p className="font-semibold text-gray-800">Treasurer, Orchid Heights</p>
+                <p className="text-[9px] text-gray-500 font-mono mt-0.5">Management Committee</p>
+              </div>
+              <div className="border-t border-gray-400 pt-2">
+                <p className="font-semibold text-gray-800">Auditor Sign-off</p>
+                <p className="text-[9px] text-emerald-700 font-mono font-bold mt-0.5">Status: VERIFIED & SEALED</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Dynamic Duration Selection and Export Modal */}

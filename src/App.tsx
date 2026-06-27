@@ -165,7 +165,7 @@ export default function App() {
   return (
     <div className={`min-h-screen ${theme === 'light' ? 'light-theme bg-[#fcfbf9] text-[#22211f]' : 'bg-[#080808] text-[#e4e3e0]'} font-sans flex flex-col md:flex-row antialiased`}>
       {/* Sidebar Navigation */}
-      <aside className="w-full md:w-64 bg-[#111111] text-[#e4e3e0] shrink-0 border-b md:border-b-0 md:border-r border-[#222] flex flex-col justify-between">
+      <aside className="w-full md:w-64 bg-[#111111] text-[#e4e3e0] shrink-0 border-b md:border-b-0 md:border-r border-[#222] flex flex-col justify-between print:hidden">
         <div className="flex flex-col">
           {/* Brand Header with Theme Switcher */}
           <div className="p-6 border-b border-[#222] flex justify-between items-start">
@@ -326,7 +326,7 @@ export default function App() {
       </aside>
 
       {/* Main Container Content */}
-      <main className="flex-1 p-6 md:p-8 space-y-8 overflow-x-hidden">
+      <main className="flex-1 p-6 md:p-8 space-y-8 overflow-x-hidden print:p-0 print:m-0 print:bg-white">
         {/* Dynamic component routing with animations */}
         <AnimatePresence mode="wait">
           <motion.div
