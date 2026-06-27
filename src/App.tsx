@@ -172,7 +172,7 @@ export default function App() {
       <header className="md:hidden sticky top-0 z-40 bg-[#111111] border-b border-[#222] text-[#e4e3e0] px-5 py-4 flex items-center justify-between shadow-md print:hidden">
         <div>
           <h1 className="font-serif italic text-lg text-[#c5a059] leading-none">Orchid Heights</h1>
-          <span className="text-[9px] font-mono font-medium text-[#e4e3e0]/40 uppercase tracking-[0.2em] mt-1 inline-block">Accountings</span>
+          <span className="text-[9px] font-mono font-medium text-[#e4e3e0]/40 uppercase tracking-[0.2em] mt-1 inline-block">Accounts</span>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -346,7 +346,7 @@ export default function App() {
           <div className="p-6 border-b border-[#222] flex justify-between items-start">
             <div>
               <h1 className="font-serif italic text-xl text-[#c5a059] leading-none">Orchid Heights</h1>
-              <span className="text-[10px] font-mono font-medium text-[#e4e3e0]/40 uppercase tracking-[0.2em] mt-2 inline-block">Accountings</span>
+              <span className="text-[10px] font-mono font-medium text-[#e4e3e0]/40 uppercase tracking-[0.2em] mt-2 inline-block">Accounts</span>
             </div>
             <button
               onClick={toggleTheme}

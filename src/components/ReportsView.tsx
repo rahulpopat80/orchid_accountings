@@ -1340,22 +1340,6 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
                 <p>HASH: SHA256-OHCOMMITTEE-2026-SECURE</p>
               </div>
             </div>
-
-            {/* Signature fields */}
-            <div className="mt-12 grid grid-cols-3 gap-8 text-center text-xs font-serif">
-              <div className="border-t border-gray-400 pt-2">
-                <p className="font-semibold text-gray-800">President, Orchid Heights</p>
-                <p className="text-[9px] text-gray-500 font-mono mt-0.5">Management Committee</p>
-              </div>
-              <div className="border-t border-gray-400 pt-2">
-                <p className="font-semibold text-gray-800">Treasurer, Orchid Heights</p>
-                <p className="text-[9px] text-gray-500 font-mono mt-0.5">Management Committee</p>
-              </div>
-              <div className="border-t border-gray-400 pt-2">
-                <p className="font-semibold text-gray-800">Auditor Sign-off</p>
-                <p className="text-[9px] text-emerald-700 font-mono font-bold mt-0.5">Status: VERIFIED & SEALED</p>
-              </div>
-            </div>
           </div>
         )}
 
