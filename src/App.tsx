@@ -30,7 +30,17 @@ import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'ledger' | 'maintenance' | 'reports' | 'sync'>('dashboard');
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>(() => {
+    const saved = localStorage.getItem('orchid_heights_transactions_data');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to load transactions from localStorage', e);
+      }
+    }
+    return parseCSVData(INITIAL_CSV_DATA);
+  });
   const [systemTime, setSystemTime] = useState(new Date('2026-06-26T20:36:20-07:00'));
   
   // Theme Preference state
@@ -71,11 +81,10 @@ export default function App() {
     ];
   }, []);
 
-  // Load initial dataset on mount
+  // Save transactions to local storage whenever they change
   useEffect(() => {
-    const data = parseCSVData(INITIAL_CSV_DATA);
-    setTransactions(data);
-  }, []);
+    localStorage.setItem('orchid_heights_transactions_data', JSON.stringify(transactions));
+  }, [transactions]);
 
   // Simple system clock updates
   useEffect(() => {
