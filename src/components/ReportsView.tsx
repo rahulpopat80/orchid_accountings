@@ -184,6 +184,29 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
     });
   }, []);
 
+  // Format voucher detail line for clean PDF rendering without 'Committee', 'Vendor', or empty/dash values
+  const formatPrintTxLine = (tx: Transaction) => {
+    const parts: string[] = [tx.date];
+    
+    const wingVal = tx.wing as string | null | undefined;
+    if (wingVal && tx.block && wingVal !== '-' && tx.block !== '-') {
+      parts.push(`${wingVal}-${tx.block}`);
+    }
+    
+    if (tx.residentName) {
+      const name = tx.residentName.trim();
+      if (name && name !== '-' && name !== 'Committee' && name !== 'Vendor' && name !== 'undefined' && name !== 'null') {
+        parts.push(name);
+      }
+    }
+    
+    if (tx.description) {
+      parts.push(tx.description);
+    }
+    
+    return parts.filter(p => p && p.trim() !== '').join(' | ');
+  };
+
   // Compute active date range label dynamically for screen display and printing
   const rangeLabel = useMemo(() => {
     if (filterType === 'all') return 'All Time';
@@ -1250,7 +1273,7 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
                                     {catTxs.map((tx, idx) => (
                                       <div key={tx.id || idx} className="flex justify-between items-start gap-4 text-[9px] font-mono text-gray-600 py-0.5">
                                         <span className="whitespace-normal break-words text-left" title={tx.description}>
-                                          {tx.date} | {tx.wing}-{tx.block} | {tx.residentName || 'Committee'} | {tx.description}
+                                          {formatPrintTxLine(tx)}
                                         </span>
                                         <span className="font-semibold text-gray-700 shrink-0">{formatCurrency(tx.amount)}</span>
                                       </div>
@@ -1285,7 +1308,7 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
                                     {catTxs.map((tx, idx) => (
                                       <div key={tx.id || idx} className="flex justify-between items-start gap-4 text-[9px] font-mono text-gray-600 py-0.5">
                                         <span className="whitespace-normal break-words text-left" title={tx.description}>
-                                          {tx.date} | {tx.wing}-{tx.block} | {tx.residentName || 'Vendor'} | {tx.description}
+                                          {formatPrintTxLine(tx)}
                                         </span>
                                         <span className="font-semibold text-gray-700 shrink-0">{formatCurrency(tx.amount)}</span>
                                       </div>
@@ -1376,7 +1399,7 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
                     <p className="text-[8px] font-mono font-bold text-gray-400 uppercase tracking-wider">Active Cash Ledger Entries</p>
                     {printableCashTransactions.map((tx, idx) => (
                       <div key={tx.id || idx} className="flex justify-between items-start gap-4 text-[8px] font-mono text-gray-600 py-0.5">
-                        <span className="whitespace-normal break-words text-left">{tx.date} | {tx.description}</span>
+                        <span className="whitespace-normal break-words text-left">{formatPrintTxLine(tx)}</span>
                         <span className={`shrink-0 ${tx.type === 'Income' ? 'text-emerald-700' : 'text-red-700'}`}>
                           {tx.type === 'Income' ? '+' : '-'}{formatCurrency(tx.amount)}
                         </span>
@@ -1399,7 +1422,7 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
                     <p className="text-[8px] font-mono font-bold text-gray-400 uppercase tracking-wider">Active Bank Ledger Entries</p>
                     {printableBankTransactions.map((tx, idx) => (
                       <div key={tx.id || idx} className="flex justify-between items-start gap-4 text-[8px] font-mono text-gray-600 py-0.5">
-                        <span className="whitespace-normal break-words text-left">{tx.date} | {tx.mode} | {tx.description}</span>
+                        <span className="whitespace-normal break-words text-left">{formatPrintTxLine(tx)}</span>
                         <span className={`shrink-0 ${tx.type === 'Income' ? 'text-emerald-700' : 'text-red-700'}`}>
                           {tx.type === 'Income' ? '+' : '-'}{formatCurrency(tx.amount)}
                         </span>
@@ -1423,7 +1446,7 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
                     {printableFDTransactions.length > 0 ? (
                       printableFDTransactions.map((tx, idx) => (
                         <div key={tx.id || idx} className="flex justify-between items-start gap-4 text-[8px] font-mono text-gray-600 py-0.5">
-                          <span className="whitespace-normal break-words text-left">{tx.date} | {tx.description}</span>
+                          <span className="whitespace-normal break-words text-left">{formatPrintTxLine(tx)}</span>
                           <span className="text-emerald-700 shrink-0">+{formatCurrency(tx.amount)}</span>
                         </div>
                       ))
