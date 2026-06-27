@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { UploadCloud, CheckCircle, AlertTriangle, FileText, RefreshCw, HelpCircle } from 'lucide-react';
+import { UploadCloud, CheckCircle, AlertTriangle, FileText, RefreshCw, HelpCircle, FileSpreadsheet } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import * as XLSX from 'xlsx';
 
 interface CSVHandlerProps {
   onDataLoaded: (csvText: string) => void;
@@ -25,34 +26,94 @@ export default function CSVHandler({ onDataLoaded, onResetToDefault, rowCount }:
   };
 
   const processFile = (file: File) => {
-    if (!file.name.endsWith('.csv')) {
+    const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+    const isCSV = file.name.endsWith('.csv');
+
+    if (!isExcel && !isCSV) {
       setStatus('error');
-      setErrorMessage('Invalid file type. Please upload a standard comma-separated (.csv) file.');
+      setErrorMessage('Invalid file type. Please upload an Excel (.xlsx, .xls) or standard CSV (.csv) file.');
       return;
     }
 
     const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const text = e.target?.result as string;
-        if (!text || !text.includes('Amount') || !text.includes('Type')) {
+    
+    if (isExcel) {
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          
+          // Convert sheet to json (array of arrays)
+          const rows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1 });
+          if (rows.length === 0) {
+            setStatus('error');
+            setErrorMessage('The uploaded Excel spreadsheet is empty.');
+            return;
+          }
+          
+          // Build a CSV-formatted string from rows
+          const csvLines = rows.map(row => {
+            return row.map(cell => {
+              if (cell === null || cell === undefined) return '';
+              const valStr = String(cell).replace(/\r?\n/g, ' ');
+              if (valStr.includes(',') || valStr.includes('"')) {
+                return `"${valStr.replace(/"/g, '""')}"`;
+              }
+              return valStr;
+            }).join(',');
+          }).filter(line => line.trim().length > 0);
+          
+          const csvText = csvLines.join('\n');
+          
+          // Quick validation for headers / content
+          const hasRequiredHeaders = (csvText.toLowerCase().includes('amount') || csvText.toLowerCase().includes('value')) && 
+                                     (csvText.toLowerCase().includes('type') || csvText.toLowerCase().includes('category'));
+                                     
+          if (!hasRequiredHeaders) {
+            setStatus('error');
+            setErrorMessage('Validation failed: Excel sheet must contain headers like "Type", "Category", and "Amount".');
+            return;
+          }
+          
+          onDataLoaded(csvText);
+          setStatus('success');
+          setTimeout(() => setStatus('idle'), 4000);
+        } catch (err) {
           setStatus('error');
-          setErrorMessage('Validation failed: Missing required columns (Date, Type, Category, Amount) in CSV header.');
-          return;
+          setErrorMessage('Failed to read or parse Excel file. Ensure it is a valid, uncorrupted file.');
         }
-        onDataLoaded(text);
-        setStatus('success');
-        setTimeout(() => setStatus('idle'), 4000);
-      } catch (err) {
+      };
+      reader.onerror = () => {
         setStatus('error');
-        setErrorMessage('Failed to read or parse file. Ensure it is a valid encoded text file.');
-      }
-    };
-    reader.onerror = () => {
-      setStatus('error');
-      setErrorMessage('FileReader encountered a fatal error reading this file.');
-    };
-    reader.readAsText(file);
+        setErrorMessage('FileReader encountered a fatal error reading this Excel file.');
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      // Standard CSV Parsing
+      reader.onload = (e) => {
+        try {
+          const text = e.target?.result as string;
+          if (!text || !text.includes('Amount') || !text.includes('Type')) {
+            setStatus('error');
+            setErrorMessage('Validation failed: Missing required columns (Date, Type, Category, Amount) in CSV header.');
+            return;
+          }
+          onDataLoaded(text);
+          setStatus('success');
+          setTimeout(() => setStatus('idle'), 4000);
+        } catch (err) {
+          setStatus('error');
+          setErrorMessage('Failed to read or parse file. Ensure it is a valid encoded text file.');
+        }
+      };
+      reader.onerror = () => {
+        setStatus('error');
+        setErrorMessage('FileReader encountered a fatal error reading this CSV file.');
+      };
+      reader.readAsText(file);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -108,7 +169,7 @@ export default function CSVHandler({ onDataLoaded, onResetToDefault, rowCount }:
         <input
           ref={fileInputRef}
           type="file"
-          accept=".csv"
+          accept=".csv, .xlsx, .xls"
           onChange={handleFileChange}
           className="hidden"
         />
@@ -116,10 +177,10 @@ export default function CSVHandler({ onDataLoaded, onResetToDefault, rowCount }:
         <div className="flex flex-col items-center justify-center space-y-2">
           <UploadCloud className={`w-8 h-8 ${dragActive ? 'text-[#c5a059]' : 'text-[#e4e3e0]/30'}`} />
           <div className="text-xs text-[#e4e3e0]/60">
-            <span className="font-semibold text-[#c5a059]">Click to import CSV</span> or drag and drop spreadsheet here
+            <span className="font-semibold text-[#c5a059]">Click to import Excel / CSV</span> or drag and drop spreadsheet here
           </div>
           <p className="text-[9px] text-[#e4e3e0]/30 font-mono uppercase tracking-wider">
-            Supports Standard CSV matching Orchid Heights Accountings format (Date, Type, Head ID, Category, Amount, Mode, Reference, Description)
+            Supports Excel (.xlsx, .xls) & CSV containing standard Orchid Heights format (Date, Type, Head ID, Category, Amount, Mode, Reference, Description)
           </p>
         </div>
       </div>

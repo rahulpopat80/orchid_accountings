@@ -45,6 +45,32 @@ export default function LedgerView({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
+  // Floating tooltip states
+  const [hoveredTx, setHoveredTx] = useState<Transaction | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  const getTooltipStyle = () => {
+    const tooltipWidth = 330;
+    const tooltipHeight = 220;
+    let left = mousePos.x + 15;
+    let top = mousePos.y + 15;
+    
+    if (left + tooltipWidth > window.innerWidth) {
+      left = mousePos.x - tooltipWidth - 15;
+    }
+    if (top + tooltipHeight > window.innerHeight) {
+      top = mousePos.y - tooltipHeight - 15;
+    }
+    
+    return {
+      position: 'fixed' as const,
+      left,
+      top,
+      zIndex: 1000,
+      width: tooltipWidth,
+    };
+  };
+
   // Modals state
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -361,7 +387,17 @@ export default function LedgerView({
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.12, delay: index * 0.008 }}
-                      className="hover:bg-[#161616]/40 text-xs transition-colors group border-b border-[#222]/20"
+                      onMouseEnter={(e) => {
+                        setHoveredTx(t);
+                        setMousePos({ x: e.clientX, y: e.clientY });
+                      }}
+                      onMouseMove={(e) => {
+                        setMousePos({ x: e.clientX, y: e.clientY });
+                      }}
+                      onMouseLeave={() => {
+                        setHoveredTx(null);
+                      }}
+                      className="hover:bg-[#161616]/40 text-xs transition-colors group border-b border-[#222]/20 relative cursor-pointer"
                     >
                       {/* Date */}
                       <td className="py-3.5 px-6 font-mono text-[#e4e3e0]/60 whitespace-nowrap">
@@ -656,6 +692,56 @@ export default function LedgerView({
           </div>
         )}
       </AnimatePresence>
+
+      {/* Reusable Stunning Hover Details Tooltip */}
+      {hoveredTx && (
+        <div 
+          style={getTooltipStyle()} 
+          className="bg-[#0f0f0f]/95 border border-[#c5a059]/50 text-xs text-[#e4e3e0] p-4 rounded-lg shadow-2xl space-y-3 pointer-events-none backdrop-blur-md select-none border-t-2"
+        >
+          <div className="flex justify-between items-center border-b border-[#222] pb-2">
+            <span className="font-mono text-[9px] text-[#c5a059] uppercase tracking-wider font-bold">Voucher Entry Detail</span>
+            <span className="font-mono text-[8px] text-[#e4e3e0]/40">#{hoveredTx.headId || hoveredTx.id.split('-').pop()}</span>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[11px]">
+            <div>
+              <span className="block text-[8px] text-[#e4e3e0]/30 font-mono uppercase tracking-wider">Date</span>
+              <span className="font-mono font-medium">{hoveredTx.date}</span>
+            </div>
+            <div>
+              <span className="block text-[8px] text-[#e4e3e0]/30 font-mono uppercase tracking-wider">Mode & Ref</span>
+              <span className="font-mono font-medium truncate max-w-[120px]">{hoveredTx.mode} {hoveredTx.reference ? `(${hoveredTx.reference})` : ''}</span>
+            </div>
+            <div>
+              <span className="block text-[8px] text-[#e4e3e0]/30 font-mono uppercase tracking-wider">Type</span>
+              <span className={`font-semibold font-mono ${hoveredTx.type === 'Income' ? 'text-[#66bb6a]' : 'text-[#ff5555]'}`}>
+                {hoveredTx.type}
+              </span>
+            </div>
+            <div>
+              <span className="block text-[8px] text-[#e4e3e0]/30 font-mono uppercase tracking-wider">Amount</span>
+              <span className="font-mono font-medium text-[#c5a059]">{formatVal(hoveredTx.amount)}</span>
+            </div>
+          </div>
+
+          {hoveredTx.residentName && (
+            <div className="border-t border-[#222]/50 pt-2 text-[11px]">
+              <span className="block text-[8px] text-[#e4e3e0]/30 font-mono uppercase tracking-wider">Resident Details</span>
+              <p className="font-serif italic text-xs text-[#e4e3e0] font-semibold mt-0.5">
+                {hoveredTx.residentName} <span className="font-mono text-[10px] text-[#c5a059] font-normal">({hoveredTx.wing}-{hoveredTx.block})</span>
+              </p>
+            </div>
+          )}
+
+          <div className="border-t border-[#222]/50 pt-2">
+            <span className="block text-[8px] text-[#e4e3e0]/30 font-mono uppercase tracking-wider">Full Remarks & Description</span>
+            <p className="text-[#e4e3e0]/80 leading-relaxed font-sans mt-1 whitespace-normal break-words text-[10.5px]">
+              {hoveredTx.description || 'No detailed remarks recorded.'}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
