@@ -1248,8 +1248,8 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
                                   {/* List of sub transactions */}
                                   <div className="pl-2 border-l border-emerald-500/30 space-y-1">
                                     {catTxs.map((tx, idx) => (
-                                      <div key={tx.id || idx} className="flex justify-between text-[9px] font-mono text-gray-600">
-                                        <span className="truncate max-w-[150px]" title={tx.description}>
+                                      <div key={tx.id || idx} className="flex justify-between items-start gap-4 text-[9px] font-mono text-gray-600 py-0.5">
+                                        <span className="whitespace-normal break-words text-left" title={tx.description}>
                                           {tx.date} | {tx.wing}-{tx.block} | {tx.residentName || 'Committee'} | {tx.description}
                                         </span>
                                         <span className="font-semibold text-gray-700 shrink-0">{formatCurrency(tx.amount)}</span>
@@ -1283,8 +1283,8 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
                                   {/* List of sub transactions */}
                                   <div className="pl-2 border-l border-red-500/30 space-y-1">
                                     {catTxs.map((tx, idx) => (
-                                      <div key={tx.id || idx} className="flex justify-between text-[9px] font-mono text-gray-600">
-                                        <span className="truncate max-w-[150px]" title={tx.description}>
+                                      <div key={tx.id || idx} className="flex justify-between items-start gap-4 text-[9px] font-mono text-gray-600 py-0.5">
+                                        <span className="whitespace-normal break-words text-left" title={tx.description}>
                                           {tx.date} | {tx.wing}-{tx.block} | {tx.residentName || 'Vendor'} | {tx.description}
                                         </span>
                                         <span className="font-semibold text-gray-700 shrink-0">{formatCurrency(tx.amount)}</span>
@@ -1375,9 +1375,9 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
                   <div className="pl-2 border-l border-gray-300 space-y-1">
                     <p className="text-[8px] font-mono font-bold text-gray-400 uppercase tracking-wider">Active Cash Ledger Entries</p>
                     {printableCashTransactions.map((tx, idx) => (
-                      <div key={tx.id || idx} className="flex justify-between text-[8px] font-mono text-gray-600">
-                        <span className="truncate max-w-[150px]">{tx.date} | {tx.description}</span>
-                        <span className={tx.type === 'Income' ? 'text-emerald-700' : 'text-red-700'}>
+                      <div key={tx.id || idx} className="flex justify-between items-start gap-4 text-[8px] font-mono text-gray-600 py-0.5">
+                        <span className="whitespace-normal break-words text-left">{tx.date} | {tx.description}</span>
+                        <span className={`shrink-0 ${tx.type === 'Income' ? 'text-emerald-700' : 'text-red-700'}`}>
                           {tx.type === 'Income' ? '+' : '-'}{formatCurrency(tx.amount)}
                         </span>
                       </div>
@@ -1398,9 +1398,9 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
                   <div className="pl-2 border-l border-gray-300 space-y-1">
                     <p className="text-[8px] font-mono font-bold text-gray-400 uppercase tracking-wider">Active Bank Ledger Entries</p>
                     {printableBankTransactions.map((tx, idx) => (
-                      <div key={tx.id || idx} className="flex justify-between text-[8px] font-mono text-gray-600">
-                        <span className="truncate max-w-[150px]">{tx.date} | {tx.mode} | {tx.description}</span>
-                        <span className={tx.type === 'Income' ? 'text-emerald-700' : 'text-red-700'}>
+                      <div key={tx.id || idx} className="flex justify-between items-start gap-4 text-[8px] font-mono text-gray-600 py-0.5">
+                        <span className="whitespace-normal break-words text-left">{tx.date} | {tx.mode} | {tx.description}</span>
+                        <span className={`shrink-0 ${tx.type === 'Income' ? 'text-emerald-700' : 'text-red-700'}`}>
                           {tx.type === 'Income' ? '+' : '-'}{formatCurrency(tx.amount)}
                         </span>
                       </div>
@@ -1422,9 +1422,9 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
                     <p className="text-[8px] font-mono font-bold text-gray-400 uppercase tracking-wider">Active term Deposit Ledger</p>
                     {printableFDTransactions.length > 0 ? (
                       printableFDTransactions.map((tx, idx) => (
-                        <div key={tx.id || idx} className="flex justify-between text-[8px] font-mono text-gray-600">
-                          <span className="truncate max-w-[150px]">{tx.date} | {tx.description}</span>
-                          <span className="text-emerald-700">+{formatCurrency(tx.amount)}</span>
+                        <div key={tx.id || idx} className="flex justify-between items-start gap-4 text-[8px] font-mono text-gray-600 py-0.5">
+                          <span className="whitespace-normal break-words text-left">{tx.date} | {tx.description}</span>
+                          <span className="text-emerald-700 shrink-0">+{formatCurrency(tx.amount)}</span>
                         </div>
                       ))
                     ) : (
