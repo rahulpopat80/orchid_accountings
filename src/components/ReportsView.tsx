@@ -869,7 +869,6 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
         {/* Document Header (For Formal Print look) */}
         <div className="text-center pb-6 border-b border-[#222] space-y-2 print:border-gray-300">
           <h2 className="text-2xl font-serif text-[#e4e3e0] print:text-black font-semibold">ORCHID HEIGHTS OWNERS ASSOCIATION</h2>
-          <p className="text-[10px] font-mono tracking-widest text-[#c5a059] uppercase font-bold">RERA REGISTRATION NO: PR/GJ/AHMEDABAD/SOCIETY/2024</p>
           <p className="text-xs text-[#e4e3e0]/60 print:text-gray-500">
             {activeReportTab === 'income_expense' 
               ? 'Annualized Operating Income & Expenditure Statement' 
@@ -1199,9 +1198,6 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
           <div className="space-y-8">
             <div className="border-b-2 border-gray-900 pb-4 text-center">
               <h1 className="text-2xl font-serif font-bold tracking-tight text-gray-950">ORCHID HEIGHTS OWNERS ASSOCIATION</h1>
-              <p className="text-[10px] font-mono font-bold text-gray-600 uppercase tracking-widest mt-1">
-                RERA REGISTRATION NO: PR/GJ/AHMEDABAD/SOCIETY/2024
-              </p>
               <h2 className="text-base font-sans font-bold text-gray-800 uppercase tracking-wider mt-2">
                 AUDITED OPERATING INCOME & EXPENDITURE STATEMENT
               </h2>
@@ -1347,9 +1343,6 @@ export default function ReportsView({ transactions, summary }: ReportsViewProps)
           <div className="space-y-8">
             <div className="border-b-2 border-gray-900 pb-4 text-center">
               <h1 className="text-2xl font-serif font-bold tracking-tight text-gray-950">ORCHID HEIGHTS OWNERS ASSOCIATION</h1>
-              <p className="text-[10px] font-mono font-bold text-gray-600 uppercase tracking-widest mt-1">
-                RERA REGISTRATION NO: PR/GJ/AHMEDABAD/SOCIETY/2024
-              </p>
               <h2 className="text-base font-sans font-bold text-gray-800 uppercase tracking-wider mt-2">
                 STATEMENT OF FINANCIAL AFFAIRS (BALANCE SHEET)
               </h2>

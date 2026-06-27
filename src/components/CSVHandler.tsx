@@ -149,7 +149,7 @@ export default function CSVHandler({ onDataLoaded, onResetToDefault, rowCount }:
           className="flex items-center gap-1.5 text-xs font-semibold text-[#c5a059] bg-[#1a1a1a] hover:bg-[#252525] border border-[#222] px-3 py-1.5 rounded uppercase tracking-wider transition cursor-pointer"
         >
           <RefreshCw className="w-3 h-3" />
-          Reset Default Data
+          Clear / Reset Ledger
         </button>
       </div>
 

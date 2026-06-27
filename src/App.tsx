@@ -97,7 +97,7 @@ export default function App() {
 
   // Reset default database
   const handleResetToDefault = () => {
-    if (confirm('Are you sure you want to revert all changes to the original official Orchid Heights ledger?')) {
+    if (confirm('Are you sure you want to clear all transactions and reset the ledger?')) {
       const data = parseCSVData(INITIAL_CSV_DATA);
       setTransactions(data);
     }
