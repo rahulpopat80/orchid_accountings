@@ -48,6 +48,7 @@ export default function LedgerView({
   // Floating tooltip states
   const [hoveredTx, setHoveredTx] = useState<Transaction | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [selectedTxForDetail, setSelectedTxForDetail] = useState<Transaction | null>(null);
 
   const getTooltipStyle = () => {
     const tooltipWidth = 330;
@@ -397,6 +398,7 @@ export default function LedgerView({
                       onMouseLeave={() => {
                         setHoveredTx(null);
                       }}
+                      onClick={() => setSelectedTxForDetail(t)}
                       className="hover:bg-[#161616]/40 text-xs transition-colors group border-b border-[#222]/20 relative cursor-pointer"
                     >
                       {/* Date */}
@@ -446,14 +448,15 @@ export default function LedgerView({
                         <td className="py-3.5 px-6 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-1.5 opacity-50 group-hover:opacity-100 transition duration-150">
                             <button
-                              onClick={() => handleOpenEdit(t)}
+                              onClick={(e) => { e.stopPropagation(); handleOpenEdit(t); }}
                               className="p-1.5 hover:bg-[#1a1a1a] text-[#e4e3e0]/60 hover:text-[#c5a059] rounded border border-transparent hover:border-[#222] transition cursor-pointer"
                               title="Edit Transaction"
                             >
                               <Edit3 className="w-3.5 h-3.5" />
                             </button>
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 if (confirm('Delete this voucher entry permanently?')) {
                                   onDeleteTransaction(t.id);
                                 }
@@ -697,7 +700,7 @@ export default function LedgerView({
       {hoveredTx && (
         <div 
           style={getTooltipStyle()} 
-          className="bg-[#0f0f0f]/95 border border-[#c5a059]/50 text-xs text-[#e4e3e0] p-4 rounded-lg shadow-2xl space-y-3 pointer-events-none backdrop-blur-md select-none border-t-2"
+          className="bg-[#0f0f0f]/95 border border-[#c5a059]/50 text-xs text-[#e4e3e0] p-4 rounded-lg shadow-2xl space-y-3 pointer-events-none backdrop-blur-md select-none border-t-2 hidden lg:block"
         >
           <div className="flex justify-between items-center border-b border-[#222] pb-2">
             <span className="font-mono text-[9px] text-[#c5a059] uppercase tracking-wider font-bold">Voucher Entry Detail</span>
@@ -742,6 +745,95 @@ export default function LedgerView({
           </div>
         </div>
       )}
+
+      {/* Interactive Mobile & Desktop Detail Overlay Modal on Row Click */}
+      <AnimatePresence>
+        {selectedTxForDetail && (
+          <div className="fixed inset-0 bg-black/75 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.97, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.97, y: 10 }}
+              className="bg-[#111111] border border-[#c5a059]/40 w-full max-w-md rounded-lg shadow-2xl overflow-hidden text-left"
+            >
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-[#222] bg-[#1a1a1a] flex justify-between items-center">
+                <div>
+                  <h3 className="font-serif italic text-[#c5a059] text-base">Voucher Entry Information</h3>
+                  <p className="text-[9px] font-mono text-[#e4e3e0]/40 uppercase tracking-widest mt-0.5">
+                    Voucher ID: #{selectedTxForDetail.headId || selectedTxForDetail.id.split('-').pop()}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedTxForDetail(null)}
+                  className="p-1 rounded hover:bg-[#252525] text-[#e4e3e0]/60 hover:text-[#e4e3e0] transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-[#080808] p-3 rounded border border-[#222]">
+                    <span className="block text-[8px] text-[#e4e3e0]/40 font-mono uppercase tracking-widest mb-1">Entry Date</span>
+                    <span className="font-mono text-xs font-semibold text-[#e4e3e0]">{selectedTxForDetail.date}</span>
+                  </div>
+                  <div className="bg-[#080808] p-3 rounded border border-[#222]">
+                    <span className="block text-[8px] text-[#e4e3e0]/40 font-mono uppercase tracking-widest mb-1">Voucher Type</span>
+                    <span className={`font-mono text-xs font-bold uppercase ${selectedTxForDetail.type === 'Income' ? 'text-[#66bb6a]' : 'text-[#ff5555]'}`}>
+                      {selectedTxForDetail.type}
+                    </span>
+                  </div>
+                  <div className="bg-[#080808] p-3 rounded border border-[#222]">
+                    <span className="block text-[8px] text-[#e4e3e0]/40 font-mono uppercase tracking-widest mb-1">Payment Mode</span>
+                    <span className="font-mono text-xs font-semibold text-[#e4e3e0] uppercase">{selectedTxForDetail.mode}</span>
+                  </div>
+                  <div className="bg-[#080808] p-3 rounded border border-[#222]">
+                    <span className="block text-[8px] text-[#e4e3e0]/40 font-mono uppercase tracking-widest mb-1">Reference ID</span>
+                    <span className="font-mono text-xs font-semibold text-[#c5a059] truncate block">{selectedTxForDetail.reference || 'N/A (Cash)'}</span>
+                  </div>
+                </div>
+
+                <div className="bg-[#080808] p-3 rounded border border-[#222]">
+                  <span className="block text-[8px] text-[#e4e3e0]/40 font-mono uppercase tracking-widest mb-1">Accounts Category</span>
+                  <span className="font-serif italic text-xs font-bold text-[#e4e3e0]">{selectedTxForDetail.category}</span>
+                </div>
+
+                {selectedTxForDetail.residentName && (
+                  <div className="bg-[#080808] p-3 rounded border border-[#222] space-y-1">
+                    <span className="block text-[8px] text-[#e4e3e0]/40 font-mono uppercase tracking-widest">Resident Association Member</span>
+                    <p className="font-serif italic text-xs font-bold text-[#e4e3e0]">{selectedTxForDetail.residentName}</p>
+                    <p className="text-[10px] font-mono text-[#c5a059]">Wing {selectedTxForDetail.wing} • Block {selectedTxForDetail.block}</p>
+                  </div>
+                )}
+
+                <div className="bg-[#080808] p-3 rounded border border-[#222]">
+                  <span className="block text-[8px] text-[#e4e3e0]/40 font-mono uppercase tracking-widest mb-1">Total Transaction Value</span>
+                  <span className="font-mono text-lg font-bold text-[#c5a059]">{formatVal(selectedTxForDetail.amount)}</span>
+                </div>
+
+                <div className="bg-[#0c0c0c] p-3.5 rounded border border-[#222] max-h-36 overflow-y-auto">
+                  <span className="block text-[8px] text-[#e4e3e0]/40 font-mono uppercase tracking-widest mb-1.5">Official Ledger Remarks</span>
+                  <p className="text-xs text-[#e4e3e0]/80 leading-relaxed break-words font-sans">
+                    {selectedTxForDetail.description || 'No additional remarks are registered for this voucher.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 bg-[#1a1a1a] border-t border-[#222] flex justify-end">
+                <button
+                  onClick={() => setSelectedTxForDetail(null)}
+                  className="px-4 py-2 bg-[#111111] border border-[#333] hover:bg-[#222] text-[#e4e3e0] text-xs font-semibold uppercase tracking-wider rounded transition cursor-pointer"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
